@@ -11,5 +11,5 @@ vf() {
 export PATH="$HOME/.local/bin:$PATH"
 
 # Host-specific settings (toolchain paths, machine-local env).
-# Not tracked in the dotfiles repo — see PLAN.md.
+# Not tracked in the dotfiles repo.
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local

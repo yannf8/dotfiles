@@ -232,5 +232,5 @@ bar {
 
 include /etc/sway/config.d/*
 
-# Host-specific overrides (monitor layout, etc). Gitignored — see PLAN.md.
+# Host-specific overrides (monitor layout, etc). Gitignored, not in the repo.
 include ~/.config/sway/config.d/*
