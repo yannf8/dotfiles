@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if pactl get-sink-mute @DEFAULT_SINK@ | grep -q "yes"; then
+    notify-send -r 9991 "Volume" "Muted"
+else
+    VOL=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100)}')
+    notify-send -r 9991 "Volume" "${VOL}%"
+fi

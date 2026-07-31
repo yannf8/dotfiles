@@ -1,0 +1,5 @@
+#!/bin/bash
+
+BRIGHTNESS=$(brightnessctl -m | cut -d, -f4)
+
+notify-send -r 9992 "Brightness" "$BRIGHTNESS"

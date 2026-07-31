@@ -1,0 +1,22 @@
+# Host-local overrides — never tracked.
+# These hold machine-specific values (monitor layout, toolchain paths).
+*.local
+.config/sway/config.d/
+
+# Editor / tool backups
+*.bak
+*.swp
+*~
+
+# Secrets — belt-and-braces. No package should ever reference these,
+# but if one ever does by accident, git refuses to track it.
+.credentials.json
+.claude.json
+id_*
+!id_*.pub.example
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+.npmrc
