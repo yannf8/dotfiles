@@ -709,7 +709,19 @@ do
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
+    -- Drives completion, go-to-definition and type errors for .js/.jsx/.ts/.tsx.
+    -- NOTE: plain .js files only get full type diagnostics with `// @ts-check` at the
+    -- top of the file, or `"checkJs": true` in the project's jsconfig/tsconfig.json.
+    ts_ls = {},
+
+    -- Linting for JS/TS. Only attaches when the project has an eslint config
+    -- (eslint.config.js, .eslintrc.*, ...), so it is a no-op in projects without one.
+    eslint = {},
+
+    -- LaTeX language server: diagnostics from the build log, completion for
+    -- commands/labels/citations, and document symbols. Pairs with VimTeX
+    -- (see lua/custom/plugins/latex.lua), which handles compiling and viewing.
+    texlab = {},
 
     stylua = {}, -- Used to format Lua code
 
@@ -768,6 +780,7 @@ do
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
     -- You can add other tools here that you want Mason to install
+    'prettierd', -- Formatter for JS/TS/JSON/CSS/HTML/Markdown (used by conform below)
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -803,14 +816,31 @@ do
       lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
     },
     -- You can also specify external formatters in here.
-    formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
-    },
+    formatters_by_ft = (function()
+      -- Prettier handles the whole JS/web family plus Markdown. `prettierd` is a
+      -- long-lived daemon (fast); `prettier` is the fallback if a project pins its own.
+      local prettier = { 'prettierd', 'prettier', stop_after_first = true }
+      local ft = {}
+      for _, filetype in ipairs {
+        'javascript',
+        'javascriptreact',
+        'typescript',
+        'typescriptreact',
+        'json',
+        'jsonc',
+        'css',
+        'scss',
+        'html',
+        'yaml',
+        'markdown',
+        'markdown.mdx',
+      } do
+        ft[filetype] = prettier
+      end
+      -- LaTeX is formatted by latexindent, which ships with the TeX distribution.
+      ft.tex = { 'latexindent' }
+      return ft
+    end)(),
   }
 
   vim.keymap.set({ 'n', 'v' }, '<leader>f', function() require('conform').format { async = true } end, { desc = '[F]ormat buffer' })
@@ -912,7 +942,29 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = {
+    'bash',
+    'c',
+    'diff',
+    'html',
+    'lua',
+    'luadoc',
+    'markdown',
+    'markdown_inline',
+    'query',
+    'vim',
+    'vimdoc',
+    -- JavaScript / TypeScript family. `tsx` covers .tsx *and* .jsx.
+    'javascript',
+    'typescript',
+    'tsx',
+    'jsdoc',
+    'json', -- also used for the `jsonc` filetype
+    'css',
+    'yaml',
+    -- NOTE: no `latex` parser here on purpose -- VimTeX provides its own (better)
+    -- LaTeX syntax highlighting and concealment. See lua/custom/plugins/latex.lua.
+  }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
@@ -940,6 +992,12 @@ do
   vim.api.nvim_create_autocmd('FileType', {
     callback = function(args)
       local buf, filetype = args.buf, args.match
+
+      -- Filetypes where another plugin owns highlighting. VimTeX's LaTeX syntax
+      -- (conceal, math zones, cite/ref groups) is better than the treesitter parser
+      -- and the two fight over the buffer, so don't auto-install/attach for `tex`.
+      local treesitter_skip = { tex = true, plaintex = true, bib = true }
+      if treesitter_skip[filetype] then return end
 
       local language = vim.treesitter.language.get_lang(filetype)
       if not language then return end
@@ -984,7 +1042,7 @@ do
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
