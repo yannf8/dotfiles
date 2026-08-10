@@ -62,6 +62,39 @@ it; a personal fork should not) because it pins plugin versions.
 To pull in upstream kickstart changes later, diff against the upstream `init.lua` by
 hand — there is no merge path from here.
 
+### Markdown / LaTeX PDF preview
+
+`<leader>mp` in a markdown buffer (`lua/custom/plugins/markdown-pdf.lua`) renders the
+file with pandoc + xelatex and opens it in a viewer that reloads on every `:w`. That
+pipeline needs system packages Stow cannot provide:
+
+```bash
+sudo dnf install pandoc-cli texlive-xetex zathura zathura-pdf-mupdf \
+  liberation-sans-fonts adwaita-mono-fonts
+sudo dnf install texlive-framed texlive-upquote texlive-ulem texlive-soul \
+  texlive-multirow texlive-wrapfig texlive-titling texlive-needspace \
+  texlive-adjustbox texlive-csquotes texlive-threeparttable texlive-selnolig
+```
+
+The second line is not optional padding. `texlive-scheme-basic` omits `framed` and
+`upquote`, which pandoc's *default* template requires, so **every** markdown file
+fails with `LaTeX Error: File 'framed.sty' not found` until they are installed. The
+rest cover features that only some documents use — `ulem` for `~~strikethrough~~`,
+`multirow`/`threeparttable` for wide tables — and are listed here so a new machine
+fails once rather than once per feature.
+
+Fonts are set in the plugin rather than here, and are constrained by what XeTeX can
+actually embed, not by taste:
+
+- A **variable** font (e.g. Adwaita Sans) aborts the build with `xdvipdfmx:fatal:
+  Invalid font: -1`. The body font must ship static files.
+- A font with **no italic** (e.g. Cantarell) silently degrades markdown emphasis.
+- Most monospace fonts here — Liberation Mono, Noto Sans Mono, JetBrains Mono Nerd —
+  **lack arrows** such as `⇄` and drop them without failing the build, leaving a gap
+  in the PDF. Adwaita Mono covers them and has all four regular/italic/bold faces.
+
+Override per-machine with `vim.g.markdown_pdf_mainfont` / `markdown_pdf_monofont`.
+
 ## What is deliberately not here
 
 KDE Plasma config (stale — sway is the live compositor, and those files carry EDID

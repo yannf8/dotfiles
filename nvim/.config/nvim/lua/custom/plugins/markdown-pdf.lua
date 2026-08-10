@@ -16,9 +16,14 @@
 --
 -- Requires: pandoc + a LaTeX engine (xelatex) + a PDF viewer.
 -- Tunables (set in init.lua before this loads, or with :lua):
---   vim.g.markdown_pdf_engine   -- default 'xelatex'
---   vim.g.markdown_pdf_args     -- table of extra pandoc args, replaces the defaults
---   vim.g.markdown_pdf_viewer   -- default: first of zathura / okular / xdg-open
+--   vim.g.markdown_pdf_engine     -- default 'xelatex'
+--   vim.g.markdown_pdf_args       -- table of extra pandoc args, APPENDED to the
+--                                    defaults (a later -V of the same key wins)
+--   vim.g.markdown_pdf_viewer     -- default: first of zathura / okular / xdg-open
+--   vim.g.markdown_pdf_mainfont   -- body font, default 'Liberation Sans'
+--   vim.g.markdown_pdf_monofont   -- code font, default 'Adwaita Mono'
+--   vim.g.markdown_pdf_mono_scale -- code size vs body, default '0.85' (GitHub's ratio)
+--   vim.g.markdown_pdf_highlight  -- pandoc --highlight-style, default 'pygments'
 
 local M = {}
 
@@ -41,22 +46,53 @@ local function find_viewer()
   return 'xdg-open'
 end
 
+-- Approximate how GitHub renders a README in light mode: system sans for prose,
+-- a smaller mono for code, blue links, on white.
+--
+-- The font choices are constrained by what XeTeX can actually embed on this box:
+--   * Adwaita Sans (Fedora's UI font) ships only as a VARIABLE font -- xdvipdfmx
+--     rejects it outright with "Invalid font: -1".
+--   * Cantarell ships no italic, so markdown emphasis would silently degrade.
+--   * Liberation Sans has the full regular/italic/bold/bold-italic set, covers
+--     arrows, and is Arial-metric -- which is in GitHub's own CSS font stack.
+local DEFAULT_MAINFONT = 'Liberation Sans'
+-- Adwaita Mono is the only fixed-width font installed here that covers arrows
+-- such as U+21C4; Liberation Mono, Noto Sans Mono and JetBrains Mono Nerd all
+-- drop them without failing the build, leaving a blank gap in the PDF.
+local DEFAULT_MONOFONT = 'Adwaita Mono'
+local LINK_COLOR = '[HTML]{0969DA}' -- GitHub's light-theme link blue
+
 local function pandoc_args(source, target)
-  local extra = vim.g.markdown_pdf_args
-    or {
-      '--pdf-engine=' .. (vim.g.markdown_pdf_engine or 'xelatex'),
-      '--from=markdown+yaml_metadata_block+tex_math_dollars+pipe_tables+task_lists',
-      '--highlight-style=tango', -- syntax highlighting for fenced code blocks
-      '--toc-depth=3',
-      '-V',
-      'geometry:margin=1in',
-      '-V',
-      'linkcolor=blue',
-      '-V',
-      'colorlinks=true',
-    }
-  local args = { 'pandoc', source, '-o', target, '--standalone' }
-  vim.list_extend(args, extra)
+  local args = {
+    'pandoc',
+    source,
+    '-o',
+    target,
+    '--standalone',
+    '--pdf-engine=' .. (vim.g.markdown_pdf_engine or 'xelatex'),
+    '--from=markdown+yaml_metadata_block+tex_math_dollars+pipe_tables+task_lists',
+    '--highlight-style=' .. (vim.g.markdown_pdf_highlight or 'pygments'),
+    '--toc-depth=3',
+    '-V',
+    'geometry:margin=1in',
+    '-V',
+    'mainfont=' .. (vim.g.markdown_pdf_mainfont or DEFAULT_MAINFONT),
+    '-V',
+    'monofont=' .. (vim.g.markdown_pdf_monofont or DEFAULT_MONOFONT),
+    '-V',
+    'monofontoptions=Scale=' .. (vim.g.markdown_pdf_mono_scale or '0.85'),
+    '-V',
+    'colorlinks=true',
+    '-V',
+    'linkcolor=' .. LINK_COLOR,
+    '-V',
+    'urlcolor=' .. LINK_COLOR,
+    '-V',
+    'toccolor=' .. LINK_COLOR,
+  }
+  -- Appended rather than substituted: overriding one setting shouldn't silently
+  -- drop the fonts and margins with it. pandoc lets a later -V win.
+  vim.list_extend(args, vim.g.markdown_pdf_args or {})
   return args
 end
 
