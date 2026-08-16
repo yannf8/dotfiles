@@ -104,6 +104,10 @@
         "format-icons": ["🌑", "🌘", "🌗", "🌖", "🌕"]
     },
     "battery": {
+        // Pin to the laptop battery. Without this, waybar aggregates every
+        // power_supply of type=Battery into one figure -- a plugged-in DualSense
+        // registers as a battery and drags the displayed percentage off.
+        "bat": "BAT0",
         "interval": 30,
         "states": {
             // "good": 95,

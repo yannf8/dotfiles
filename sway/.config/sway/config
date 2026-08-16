@@ -19,7 +19,9 @@ set $term alacritty
 set $menu fuzzel
 
 font pango:JetBrainsMono Nerd Font 13
-exec waybar > /dev/null 2>&1
+# waybar is run by the systemd user unit (see the `systemd` stow package), not
+# from here -- a bare `exec` leaves the session bar-less if waybar ever crashes.
+# Enable it once per machine: systemctl --user enable --now waybar.service
 exec mako
 
 ### Output configuration

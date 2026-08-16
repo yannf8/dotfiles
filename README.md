@@ -21,6 +21,7 @@ package symlinks its files into place.
 | `alacritty` | `~/.config/alacritty/alacritty.toml` | Terminal. |
 | `fastfetch` | `~/.config/fastfetch/config.jsonc` | System info readout. |
 | `xdg` | `~/.config/mimeapps.list` | Default application handlers. |
+| `systemd` | `~/.config/systemd/user/` | User-unit drop-ins. Currently: waybar restart policy. |
 
 ## Bootstrap on a new machine
 
@@ -28,8 +29,22 @@ package symlinks its files into place.
 sudo dnf install stow git
 git clone <this-repo> ~/dotfiles
 cd ~/dotfiles
-stow -n -v */          # dry run first — check for conflicts
-stow */                # then commit to it
+stow -n -v */                    # dry run first — check for conflicts
+stow $(ls -d */ | grep -v systemd)   # everything except systemd
+stow --no-folding systemd        # see below
+systemctl --user daemon-reload
+systemctl --user enable --now waybar.service
+```
+
+`systemd` **must** be stowed with `--no-folding`. Plain `stow` symlinks the whole
+`waybar.service.d/` directory into place, and systemd (259) silently ignores a
+drop-in directory that is itself a symlink — `systemctl show waybar.service` will
+report the packaged defaults with no hint that the override exists. `--no-folding`
+creates a real directory and symlinks only `override.conf` inside it, which systemd
+does read. Verify with:
+
+```bash
+systemctl --user show waybar.service -p Restart -p DropInPaths
 ```
 
 If stow reports `WARNING: existing target`, the file already exists in `$HOME`.
@@ -50,6 +65,28 @@ Anything tied to one machine is kept **out** of this repo and sourced at runtime
 `sway/config` ends with `include ~/.config/sway/config.d/*`, and `.zshrc` ends with
 `[ -f ~/.zshrc.local ] && source ~/.zshrc.local`. Both are gitignored. On a new
 machine, create them by hand — everything else works without them.
+
+## Waybar is started by systemd, not by sway
+
+`sway/config` does **not** `exec waybar`. The bar runs as a systemd user unit so it
+is supervised, because waybar can and does abort at runtime.
+
+Its battery module rescans `/sys/class/power_supply` every 30s, and upstream lets a
+`std::filesystem` error propagate out of a worker thread that has no handler — so if
+a power-supply device disappears between the directory listing and the stat of its
+files, the whole bar dies with `SIGABRT`. A DualSense controller re-enumerating over
+USB triggers this reliably: it registers as `type=Battery`, so it lands in the same
+scan as `BAT0`. Under a bare `exec` the bar just stays dead for the rest of the
+session; the drop-in brings it back in a second.
+
+Config cannot prevent the abort — `refreshBatteries()` iterates the whole directory
+*before* applying the `bat` name filter, so pinning `"bat": "BAT0"` does not keep the
+iterator away from the controller. That setting is still there, for a different
+reason: without it waybar aggregates every `type=Battery` supply into one figure, so
+a plugged-in controller drags the reported laptop percentage off.
+
+The real fix belongs upstream (catch in the worker). Revisit the drop-in if that
+lands.
 
 ## Neovim
 
