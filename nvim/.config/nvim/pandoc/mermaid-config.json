@@ -1,0 +1,16 @@
+{
+  "fontFamily": "Liberation Sans, Arial, Helvetica, sans-serif",
+  "themeVariables": {
+    "fontSize": "15px",
+    "primaryColor": "#f6f8fa",
+    "primaryBorderColor": "#57606a",
+    "primaryTextColor": "#1f2328",
+    "lineColor": "#57606a",
+    "clusterBkg": "#ffffff",
+    "clusterBorder": "#d0d7de"
+  },
+  "flowchart": { "useMaxWidth": false, "htmlLabels": true, "curve": "basis" },
+  "sequence": { "useMaxWidth": false },
+  "er": { "useMaxWidth": false },
+  "gantt": { "useMaxWidth": false }
+}

@@ -24,6 +24,9 @@
 --   vim.g.markdown_pdf_monofont   -- code font, default 'Adwaita Mono'
 --   vim.g.markdown_pdf_mono_scale -- code size vs body, default '0.85' (GitHub's ratio)
 --   vim.g.markdown_pdf_highlight  -- pandoc --highlight-style, default 'pygments'
+--   vim.g.markdown_pdf_mermaid    -- render ```mermaid fences, default true
+--   vim.g.markdown_pdf_mermaid_theme      -- default 'neutral'
+--   vim.g.markdown_pdf_mermaid_background -- default 'white'
 
 local M = {}
 
@@ -62,6 +65,28 @@ local DEFAULT_MAINFONT = 'Liberation Sans'
 local DEFAULT_MONOFONT = 'Adwaita Mono'
 local LINK_COLOR = '[HTML]{0969DA}' -- GitHub's light-theme link blue
 
+-- ```mermaid fences are turned into vector PDFs by pandoc/mermaid.lua, which
+-- shells out to mermaid-cli (mmdc). Both pieces are optional: if either is
+-- missing we just don't add the filter, and the fence degrades to a verbatim
+-- code block -- exactly what pandoc does unaided. So a machine without mmdc
+-- still renders every document, it just shows the diagram as source.
+local MERMAID_FILTER = vim.fs.joinpath(vim.fn.stdpath 'config', 'pandoc', 'mermaid.lua')
+
+local function mermaid_enabled()
+  if vim.g.markdown_pdf_mermaid == false then return false end
+  return vim.fn.executable 'mmdc' == 1 and vim.fn.filereadable(MERMAID_FILTER) == 1
+end
+
+--- Passed through to the filter. Merged with the parent environment, not
+--- replacing it -- mmdc needs PATH and HOME to find Chromium.
+local function mermaid_env()
+  if not mermaid_enabled() then return nil end
+  return {
+    MERMAID_THEME = vim.g.markdown_pdf_mermaid_theme or 'neutral',
+    MERMAID_BACKGROUND = vim.g.markdown_pdf_mermaid_background or 'white',
+  }
+end
+
 local function pandoc_args(source, target)
   local args = {
     'pandoc',
@@ -90,6 +115,16 @@ local function pandoc_args(source, target)
     '-V',
     'toccolor=' .. LINK_COLOR,
   }
+  if mermaid_enabled() then
+    vim.list_extend(args, {
+      '--lua-filter=' .. MERMAID_FILTER,
+      -- adjustbox's `max width` key caps a wide diagram at the text block
+      -- without upscaling a small one, which width=\linewidth would do.
+      '-V',
+      'header-includes=\\usepackage[export]{adjustbox}',
+    })
+  end
+
   -- Appended rather than substituted: overriding one setting shouldn't silently
   -- drop the fonts and margins with it. pandoc lets a later -V win.
   vim.list_extend(args, vim.g.markdown_pdf_args or {})
@@ -109,7 +144,7 @@ local function render(bufnr, on_first_success)
   end
   session.running = true
 
-  vim.system(pandoc_args(session.source, session.tmp), { text = true, cwd = vim.fs.dirname(session.source) }, function(result)
+  vim.system(pandoc_args(session.source, session.tmp), { text = true, cwd = vim.fs.dirname(session.source), env = mermaid_env() }, function(result)
     vim.schedule(function()
       session.running = false
 
@@ -119,6 +154,11 @@ local function render(bufnr, on_first_success)
         notify('render failed:\n' .. err, vim.log.levels.ERROR)
         return
       end
+
+      -- The mermaid filter degrades a broken diagram to a code block instead of
+      -- failing the build, so pandoc exits 0 and this is the only sign of it.
+      local stderr = result.stderr or ''
+      if stderr:find '%[mermaid%.lua%]' then notify('mermaid: ' .. vim.trim(stderr), vim.log.levels.WARN) end
 
       local ok, rename_err = vim.uv.fs_rename(session.tmp, session.pdf)
       if not ok then
