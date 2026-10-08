@@ -1,5 +1,8 @@
 // -*- mode: jsonc -*-
 {
+    // Host-specific overrides (battery name). Gitignored via *.local, not in
+    // the repo. Values set in this file win over anything in the include.
+    "include": ["~/.config/waybar/config.local"],
     "layer": "top",
     "position": "top",
     "height": 30, // Waybar height (to be removed for auto height)
@@ -104,10 +107,12 @@
         "format-icons": ["🌑", "🌘", "🌗", "🌖", "🌕"]
     },
     "battery": {
-        // Pin to the laptop battery. Without this, waybar aggregates every
-        // power_supply of type=Battery into one figure -- a plugged-in DualSense
-        // registers as a battery and drags the displayed percentage off.
-        "bat": "BAT0",
+        // "bat" (which battery to show) is per-machine, so it lives in the
+        // gitignored ~/.config/waybar/config.local included at the top of this file:
+        // BAT0 on the X1, macsmc-battery on the M1 Air under Asahi. Without a
+        // pin, waybar aggregates every power_supply of type=Battery into one
+        // figure -- a plugged-in DualSense registers as a battery and drags the
+        // displayed percentage off.
         "interval": 30,
         "states": {
             // "good": 95,

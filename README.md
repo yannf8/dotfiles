@@ -61,10 +61,13 @@ Anything tied to one machine is kept **out** of this repo and sourced at runtime
 |---|---|
 | `~/.config/sway/config.d/local` | Monitor layout (`output` lines) |
 | `~/.zshrc.local` | Toolchain paths, e.g. `QSYS_ROOTDIR` |
+| `~/.config/waybar/config.local` | Battery to show: `{ "battery": { "bat": "BAT0" } }` (X1), `macsmc-battery` (M1 Air / Asahi) |
 
-`sway/config` ends with `include ~/.config/sway/config.d/*`, and `.zshrc` ends with
-`[ -f ~/.zshrc.local ] && source ~/.zshrc.local`. Both are gitignored. On a new
-machine, create them by hand — everything else works without them.
+`sway/config` ends with `include ~/.config/sway/config.d/*`, `.zshrc` ends with
+`[ -f ~/.zshrc.local ] && source ~/.zshrc.local`, and waybar's `config.jsonc`
+starts with `"include": ["~/.config/waybar/config.local"]`. All are gitignored. On a
+new machine, create them by hand — everything else works without them (waybar
+without its `config.local` just sums every battery it finds).
 
 ## Waybar is started by systemd, not by sway
 
@@ -80,10 +83,11 @@ scan as `BAT0`. Under a bare `exec` the bar just stays dead for the rest of the
 session; the drop-in brings it back in a second.
 
 Config cannot prevent the abort — `refreshBatteries()` iterates the whole directory
-*before* applying the `bat` name filter, so pinning `"bat": "BAT0"` does not keep the
-iterator away from the controller. That setting is still there, for a different
-reason: without it waybar aggregates every `type=Battery` supply into one figure, so
-a plugged-in controller drags the reported laptop percentage off.
+*before* applying the `bat` name filter, so pinning `"bat"` does not keep the
+iterator away from the controller. The pin is still set, in the host-local
+`config.local`, for a different reason: without it waybar aggregates every
+`type=Battery` supply into one figure, so a plugged-in controller drags the reported
+laptop percentage off.
 
 The real fix belongs upstream (catch in the worker). Revisit the drop-in if that
 lands.
