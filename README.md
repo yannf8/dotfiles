@@ -1,5 +1,7 @@
 # dotfiles
 
+> **NOTE:** AI has been used to help with writing the README and using GNU Stow, along with other small tasks. Most of the dotfiles are natural organic, hand-crafted by a human (me).
+
 Personal config for a Fedora 44 + **sway/Wayland** setup, managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 Each top-level directory is a *stow package* whose contents mirror `$HOME`. Stowing a
