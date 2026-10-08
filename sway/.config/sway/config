@@ -68,7 +68,7 @@ bindsym $mod+Return exec $term
 bindsym $mod+Shift+q kill
 
 # Start your launcher
-bindsym $mod+d exec $menu
+bindsym $mod+space exec $menu
 
 # Drag floating windows by holding down $mod and left mouse button.
 # Resize them with right mouse button + $mod.
@@ -151,10 +151,10 @@ bindsym $mod+e layout toggle split
 bindsym $mod+f fullscreen
 
 # Toggle the current focus between tiling and floating mode
-bindsym $mod+Shift+space floating toggle
+#bindsym $mod+Shift+space floating toggle
 
 # Swap focus between the tiling area and the floating area
-bindsym $mod+space focus mode_toggle
+#bindsym $mod+space focus mode_toggle
 
 # Move focus to the parent container
 bindsym $mod+a focus parent
@@ -214,6 +214,8 @@ bindsym --locked XF86MonBrightnessUp exec brightnessctl set +5% && ~/.config/swa
 # Save full screen to ~/Pictures/screenshots/ with notification
 bindsym Print exec grimshot --notify save screen "$HOME/Pictures/screenshots/screenshot-$(date +'%d-%m-%Y_%H-%M-%S').png"
 bindsym Shift+Print exec grimshot --notify save area "$HOME/Pictures/screenshots/screenshot-$(date +'%d-%m-%Y_%H-%M-%S').png"
+# Area screenshot without a Print key (the M1 Air's keyboard has none)
+bindsym $mod+Shift+s exec grimshot --notify save area "$HOME/Pictures/screenshots/screenshot-$(date +'%d-%m-%Y_%H-%M-%S').png"
 # Status Bar:
 #
 # Read `man 5 sway-bar` for more information about this section.
