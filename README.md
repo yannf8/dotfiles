@@ -24,6 +24,7 @@ package symlinks its files into place.
 | `fastfetch` | `~/.config/fastfetch/config.jsonc` | System info readout. |
 | `xdg` | `~/.config/mimeapps.list` | Default application handlers. |
 | `systemd` | `~/.config/systemd/user/` | User-unit drop-ins. Currently: waybar restart policy. |
+| `tmux` | `~/.tmux.conf` | Vim-style tmux: Alt-hjkl panes, v/s splits, vi copy mode → wl-copy, `prefix e` popup reader, `prefix V` vibe mode (`.config/tmux/vibe.sh`). |
 
 ## Bootstrap on a new machine
 
